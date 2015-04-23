@@ -1,0 +1,2 @@
+# HBaseObserver
+通过HBase Observer同步数据到ElasticSearch
