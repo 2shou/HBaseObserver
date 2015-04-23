@@ -1,4 +1,5 @@
-package com.ucweb.bigdata.observer;
+package com.gavin.observer;
+
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

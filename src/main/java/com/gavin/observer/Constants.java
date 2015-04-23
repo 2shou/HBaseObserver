@@ -1,4 +1,5 @@
-package com.ucweb.bigdata.observer;
+package com.gavin.observer;
+
 
 public class Constants {
     public static final String CLUSTER_NAME = "bigdata_es";

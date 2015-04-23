@@ -1,4 +1,5 @@
-package com.ucweb.bigdata.observer;
+package com.gavin.observer;
+
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
