@@ -29,13 +29,11 @@ import java.util.NavigableMap;
 
 public class DataSyncObserver extends BaseRegionObserver {
 
-    private static final Log LOG = LogFactory.getLog(DataSyncObserver.class);
     private static Client client = null;
 
 
     @Override
     public void start(CoprocessorEnvironment env) throws IOException {
-        LOG.info("observer: start");
         Settings settings = ImmutableSettings.settingsBuilder()
                 .put("cluster.name", Constants.CLUSTER_NAME).build();
         client = new TransportClient(settings)
@@ -47,7 +45,6 @@ public class DataSyncObserver extends BaseRegionObserver {
     @Override
     public void postPut(ObserverContext<RegionCoprocessorEnvironment> e, Put put, WALEdit edit, Durability durability) throws IOException {
         try {
-            LOG.info("observer: post put");
             String indexId = new String(Base64.encodeBase64(put.getRow()));
             NavigableMap<byte[], List<Cell>> familyMap = put.getFamilyCellMap();
             Map<String, Object> json = new HashMap<String, Object>();
@@ -55,23 +52,21 @@ public class DataSyncObserver extends BaseRegionObserver {
                 Cell cell = entry.getValue().get(0);
                 String key = Bytes.toString(CellUtil.cloneQualifier(cell));
                 String value = Bytes.toString(CellUtil.cloneValue(cell));
-                LOG.info(key + " " + value);
                 json.put(key, value);
             }
             ElasticSearchOperator.addIndexBuilderToBulk(client.prepareIndex(Constants.INDEX_NAME, Constants.TYPE_NAME, indexId).setSource(json));
         } catch (Exception ex) {
-            LOG.error(ex.getMessage());
+            ex.printStackTrace();
         }
     }
 
     @Override
     public void postDelete(final ObserverContext<RegionCoprocessorEnvironment> e, final Delete delete, final WALEdit edit, final Durability durability) throws IOException {
         try {
-            LOG.info("observer: post delete");
             String indexId = new String(Base64.encodeBase64(delete.getRow()));
             ElasticSearchOperator.addDeleteBuilderToBulk(client.prepareDelete(Constants.INDEX_NAME, Constants.TYPE_NAME, indexId));
         } catch (Exception ex) {
-            LOG.error(ex.getMessage());
+            ex.printStackTrace();
         }
     }
 

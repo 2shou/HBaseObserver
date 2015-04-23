@@ -29,7 +29,6 @@ public class ElasticSearchOperator {
     private static BulkRequestBuilder bulkRequestBuilder = null;
 
     private static Lock commitLock = new ReentrantLock();
-    private static final Log LOG = LogFactory.getLog(ElasticSearchOperator.class);
 
     static {
         Settings settings = ImmutableSettings.settingsBuilder()
@@ -50,15 +49,12 @@ public class ElasticSearchOperator {
             bulkRequestBuilder.add(builder);
             if (bulkRequestBuilder.numberOfActions() >= MAX_BULK_COUNT) {
                 BulkResponse bulkResponse = bulkRequestBuilder.execute().actionGet();
-                if (bulkResponse.hasFailures()) {
-                    // TODO
-                    LOG.error("bulk requests failed");
-                } else {
+                if (!bulkResponse.hasFailures()) {
                     bulkRequestBuilder = client.prepareBulk();
                 }
             }
         } catch (Exception ex) {
-            LOG.error(ex.getMessage());
+            ex.printStackTrace();
         } finally {
             commitLock.unlock();
         }
@@ -70,15 +66,12 @@ public class ElasticSearchOperator {
             bulkRequestBuilder.add(builder);
             if (bulkRequestBuilder.numberOfActions() >= MAX_BULK_COUNT) {
                 BulkResponse bulkResponse = bulkRequestBuilder.execute().actionGet();
-                if (bulkResponse.hasFailures()) {
-                    // TODO
-                    LOG.error("bulk requests failed");
-                } else {
+                if (!bulkResponse.hasFailures()) {
                     bulkRequestBuilder = client.prepareBulk();
                 }
             }
         } catch (Exception ex) {
-            LOG.error(ex.getMessage());
+            ex.printStackTrace();
         } finally {
             commitLock.unlock();
         }
@@ -91,15 +84,12 @@ public class ElasticSearchOperator {
             try {
                 if (bulkRequestBuilder.numberOfActions() > 0) {
                     BulkResponse bulkResponse = bulkRequestBuilder.execute().actionGet();
-                    if (bulkResponse.hasFailures()) {
-                        // TODO
-                        LOG.error("bulk requests failed");
-                    } else {
+                    if (!bulkResponse.hasFailures()) {
                         bulkRequestBuilder = client.prepareBulk();
                     }
                 }
             } catch (Exception ex) {
-                LOG.error(ex.getMessage());
+                ex.printStackTrace();
             } finally {
                 commitLock.unlock();
             }
@@ -116,8 +106,6 @@ public class ElasticSearchOperator {
     }
 
     public static void main(String[] args) {
-        test();
-        test();
         test();
     }
 }
