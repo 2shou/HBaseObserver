@@ -1,5 +1,3 @@
-通过HBase Observer同步数据到ElasticSearch
-
 # 测试环境
 
 - CDH 5.1.0

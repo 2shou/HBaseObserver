@@ -1,8 +1,6 @@
 package com.gavin.observer;
 
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
@@ -22,7 +20,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class ElasticSearchOperator {
 
+    // 缓冲池容量
     private static final int MAX_BULK_COUNT = 10;
+    // 最大提交间隔（秒）
     private static final int MAX_COMMIT_INTERVAL = 60 * 5;
 
     private static Client client = null;
@@ -43,16 +43,26 @@ public class ElasticSearchOperator {
         timer.schedule(new CommitTimer(), 10 * 1000, MAX_COMMIT_INTERVAL * 1000);
     }
 
+    /*
+    判断缓存池是否已满，批量提交
+     */
+    private static void bulkRequest(int threshold) {
+        if (bulkRequestBuilder.numberOfActions() >= threshold) {
+            BulkResponse bulkResponse = bulkRequestBuilder.execute().actionGet();
+            if (!bulkResponse.hasFailures()) {
+                bulkRequestBuilder = client.prepareBulk();
+            }
+        }
+    }
+
+    /*
+    加入索引请求到缓冲池
+     */
     public static void addIndexBuilderToBulk(IndexRequestBuilder builder) {
         commitLock.lock();
         try {
             bulkRequestBuilder.add(builder);
-            if (bulkRequestBuilder.numberOfActions() >= MAX_BULK_COUNT) {
-                BulkResponse bulkResponse = bulkRequestBuilder.execute().actionGet();
-                if (!bulkResponse.hasFailures()) {
-                    bulkRequestBuilder = client.prepareBulk();
-                }
-            }
+            bulkRequest(MAX_BULK_COUNT);
         } catch (Exception ex) {
             ex.printStackTrace();
         } finally {
@@ -60,16 +70,14 @@ public class ElasticSearchOperator {
         }
     }
 
+    /*
+    加入删除请求到缓冲池
+     */
     public static void addDeleteBuilderToBulk(DeleteRequestBuilder builder) {
         commitLock.lock();
         try {
             bulkRequestBuilder.add(builder);
-            if (bulkRequestBuilder.numberOfActions() >= MAX_BULK_COUNT) {
-                BulkResponse bulkResponse = bulkRequestBuilder.execute().actionGet();
-                if (!bulkResponse.hasFailures()) {
-                    bulkRequestBuilder = client.prepareBulk();
-                }
-            }
+            bulkRequest(MAX_BULK_COUNT);
         } catch (Exception ex) {
             ex.printStackTrace();
         } finally {
@@ -77,17 +85,15 @@ public class ElasticSearchOperator {
         }
     }
 
+    /*
+    定时任务，避免RegionServer迟迟无数据更新，导致ElasticSearch没有与HBase同步
+     */
     static class CommitTimer extends TimerTask {
         @Override
         public void run() {
             commitLock.lock();
             try {
-                if (bulkRequestBuilder.numberOfActions() > 0) {
-                    BulkResponse bulkResponse = bulkRequestBuilder.execute().actionGet();
-                    if (!bulkResponse.hasFailures()) {
-                        bulkRequestBuilder = client.prepareBulk();
-                    }
-                }
+                bulkRequest(0);
             } catch (Exception ex) {
                 ex.printStackTrace();
             } finally {
