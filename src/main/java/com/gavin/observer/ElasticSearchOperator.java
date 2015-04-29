@@ -43,8 +43,9 @@ public class ElasticSearchOperator {
         timer.schedule(new CommitTimer(), 10 * 1000, MAX_COMMIT_INTERVAL * 1000);
     }
 
-    /*
-    判断缓存池是否已满，批量提交
+    /**
+     * 判断缓存池是否已满，批量提交
+     * @param threshold
      */
     private static void bulkRequest(int threshold) {
         if (bulkRequestBuilder.numberOfActions() >= threshold) {
@@ -55,8 +56,9 @@ public class ElasticSearchOperator {
         }
     }
 
-    /*
-    加入索引请求到缓冲池
+    /**
+     * 加入索引请求到缓冲池
+     * @param builder
      */
     public static void addIndexBuilderToBulk(IndexRequestBuilder builder) {
         commitLock.lock();
@@ -70,8 +72,9 @@ public class ElasticSearchOperator {
         }
     }
 
-    /*
-    加入删除请求到缓冲池
+    /**
+     * 加入删除请求到缓冲池
+     * @param builder
      */
     public static void addDeleteBuilderToBulk(DeleteRequestBuilder builder) {
         commitLock.lock();
@@ -85,8 +88,8 @@ public class ElasticSearchOperator {
         }
     }
 
-    /*
-    定时任务，避免RegionServer迟迟无数据更新，导致ElasticSearch没有与HBase同步
+    /**
+     * 定时任务，避免RegionServer迟迟无数据更新，导致ElasticSearch没有与HBase同步
      */
     static class CommitTimer extends TimerTask {
         @Override
