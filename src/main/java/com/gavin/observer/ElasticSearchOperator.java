@@ -48,7 +48,7 @@ public class ElasticSearchOperator {
      * @param threshold
      */
     private static void bulkRequest(int threshold) {
-        if (bulkRequestBuilder.numberOfActions() >= threshold) {
+        if (bulkRequestBuilder.numberOfActions() > threshold) {
             BulkResponse bulkResponse = bulkRequestBuilder.execute().actionGet();
             if (!bulkResponse.hasFailures()) {
                 bulkRequestBuilder = client.prepareBulk();
