@@ -32,10 +32,10 @@ public class ElasticSearchOperator {
 
     static {
         Settings settings = ImmutableSettings.settingsBuilder()
-                .put("cluster.name", Constants.CLUSTER_NAME).build();
+                .put("cluster.name", Config.clusterName).build();
         client = new TransportClient(settings)
                 .addTransportAddress(new InetSocketTransportAddress(
-                        Constants.SERVER_HOST, Constants.SERVER_PORT));
+                        Config.nodeHost, Config.nodePort));
         bulkRequestBuilder = client.prepareBulk();
         bulkRequestBuilder.setRefresh(true);
 
@@ -45,6 +45,7 @@ public class ElasticSearchOperator {
 
     /**
      * 判断缓存池是否已满，批量提交
+     *
      * @param threshold
      */
     private static void bulkRequest(int threshold) {
@@ -58,6 +59,7 @@ public class ElasticSearchOperator {
 
     /**
      * 加入索引请求到缓冲池
+     *
      * @param builder
      */
     public static void addIndexBuilderToBulk(IndexRequestBuilder builder) {
@@ -74,6 +76,7 @@ public class ElasticSearchOperator {
 
     /**
      * 加入删除请求到缓冲池
+     *
      * @param builder
      */
     public static void addDeleteBuilderToBulk(DeleteRequestBuilder builder) {
@@ -109,7 +112,7 @@ public class ElasticSearchOperator {
         for (int i = 0; i < 10; i++) {
             Map<String, Object> json = new HashMap<String, Object>();
             json.put("field", "test");
-            addIndexBuilderToBulk(client.prepareIndex(Constants.INDEX_NAME, Constants.TYPE_NAME, String.valueOf(i)).setSource(json));
+            addIndexBuilderToBulk(client.prepareIndex(Config.indexName, Config.typeName, String.valueOf(i)).setSource(json));
         }
         System.out.println(bulkRequestBuilder.numberOfActions());
     }

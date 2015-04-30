@@ -2,6 +2,9 @@ package com.gavin.observer;
 
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.CoprocessorEnvironment;
@@ -28,15 +31,27 @@ import java.util.NavigableMap;
 public class DataSyncObserver extends BaseRegionObserver {
 
     private static Client client = null;
+    private static final Log LOG = LogFactory.getLog(DataSyncObserver.class);
 
 
     @Override
     public void start(CoprocessorEnvironment env) throws IOException {
+
+        // 读取HBase Shell的指令参数
+        Configuration conf = env.getConfiguration();
+        Config.clusterName = conf.get("es_cluster");
+        Config.nodeHost = conf.get("es_host");
+        Config.nodePort = conf.getInt("es_port", -1);
+        Config.indexName = conf.get("es_index");
+        Config.typeName = conf.get("es_type");
+
+        LOG.info("observer -- started with config: " + Config.getInfo());
+
         Settings settings = ImmutableSettings.settingsBuilder()
-                .put("cluster.name", Constants.CLUSTER_NAME).build();
+                .put("cluster.name", Config.clusterName).build();
         client = new TransportClient(settings)
                 .addTransportAddress(new InetSocketTransportAddress(
-                        Constants.SERVER_HOST, Constants.SERVER_PORT));
+                        Config.nodeHost, Config.nodePort));
     }
 
 
@@ -52,9 +67,10 @@ public class DataSyncObserver extends BaseRegionObserver {
                 String value = Bytes.toString(CellUtil.cloneValue(cell));
                 json.put(key, value);
             }
-            ElasticSearchOperator.addIndexBuilderToBulk(client.prepareIndex(Constants.INDEX_NAME, Constants.TYPE_NAME, indexId).setSource(json));
+            ElasticSearchOperator.addIndexBuilderToBulk(client.prepareIndex(Config.indexName, Config.typeName, indexId).setSource(json));
+            LOG.info("observer -- add new doc: " + indexId);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            LOG.error(ex);
         }
     }
 
@@ -62,9 +78,10 @@ public class DataSyncObserver extends BaseRegionObserver {
     public void postDelete(final ObserverContext<RegionCoprocessorEnvironment> e, final Delete delete, final WALEdit edit, final Durability durability) throws IOException {
         try {
             String indexId = new String(Base64.encodeBase64(delete.getRow()));
-            ElasticSearchOperator.addDeleteBuilderToBulk(client.prepareDelete(Constants.INDEX_NAME, Constants.TYPE_NAME, indexId));
+            ElasticSearchOperator.addDeleteBuilderToBulk(client.prepareDelete(Config.indexName, Config.typeName, indexId));
+            LOG.info("observer -- delete a doc: " + indexId);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            LOG.error(ex);
         }
     }
 
