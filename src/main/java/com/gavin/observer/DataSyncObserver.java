@@ -69,10 +69,11 @@ public class DataSyncObserver extends BaseRegionObserver {
             NavigableMap<byte[], List<Cell>> familyMap = put.getFamilyCellMap();
             Map<String, Object> json = new HashMap<String, Object>();
             for (Map.Entry<byte[], List<Cell>> entry : familyMap.entrySet()) {
-                Cell cell = entry.getValue().get(0);
-                String key = Bytes.toString(CellUtil.cloneQualifier(cell));
-                String value = Bytes.toString(CellUtil.cloneValue(cell));
-                json.put(key, value);
+                for (Cell cell : entry.getValue()) {
+                    String key = Bytes.toString(CellUtil.cloneQualifier(cell));
+                    String value = Bytes.toString(CellUtil.cloneValue(cell));
+                    json.put(key, value);
+                }
             }
             ElasticSearchOperator.addIndexBuilderToBulk(client.prepareIndex(Config.indexName, Config.typeName, indexId).setSource(json));
             LOG.info("observer -- add new doc: " + indexId);
