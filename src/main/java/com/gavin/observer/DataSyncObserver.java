@@ -34,10 +34,12 @@ public class DataSyncObserver extends BaseRegionObserver {
     private static final Log LOG = LogFactory.getLog(DataSyncObserver.class);
 
 
-    @Override
-    public void start(CoprocessorEnvironment env) throws IOException {
-
-        // 读取HBase Shell的指令参数
+    /**
+     * 读取HBase Shell的指令参数
+     *
+     * @param env
+     */
+    private void readConfiguration(CoprocessorEnvironment env) {
         Configuration conf = env.getConfiguration();
         Config.clusterName = conf.get("es_cluster");
         Config.nodeHost = conf.get("es_host");
@@ -46,7 +48,12 @@ public class DataSyncObserver extends BaseRegionObserver {
         Config.typeName = conf.get("es_type");
 
         LOG.info("observer -- started with config: " + Config.getInfo());
+    }
 
+
+    @Override
+    public void start(CoprocessorEnvironment env) throws IOException {
+        readConfiguration(env);
         Settings settings = ImmutableSettings.settingsBuilder()
                 .put("cluster.name", Config.clusterName).build();
         client = new TransportClient(settings)
