@@ -4,7 +4,7 @@ package com.gavin.observer;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequestBuilder;
-import org.elasticsearch.action.index.IndexRequestBuilder;
+import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -62,7 +62,7 @@ public class ElasticSearchOperator {
      *
      * @param builder
      */
-    public static void addIndexBuilderToBulk(IndexRequestBuilder builder) {
+    public static void addUpdateBuilderToBulk(UpdateRequestBuilder builder) {
         commitLock.lock();
         try {
             bulkRequestBuilder.add(builder);
@@ -112,7 +112,7 @@ public class ElasticSearchOperator {
         for (int i = 0; i < 10; i++) {
             Map<String, Object> json = new HashMap<String, Object>();
             json.put("field", "test");
-            addIndexBuilderToBulk(client.prepareIndex(Config.indexName, Config.typeName, String.valueOf(i)).setSource(json));
+            addUpdateBuilderToBulk(client.prepareUpdate(Config.indexName, Config.typeName, String.valueOf(i)).setUpsert(json));
         }
         System.out.println(bulkRequestBuilder.numberOfActions());
     }

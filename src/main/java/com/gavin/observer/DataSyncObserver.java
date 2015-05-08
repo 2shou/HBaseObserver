@@ -1,7 +1,6 @@
 package com.gavin.observer;
 
 
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -65,7 +64,7 @@ public class DataSyncObserver extends BaseRegionObserver {
     @Override
     public void postPut(ObserverContext<RegionCoprocessorEnvironment> e, Put put, WALEdit edit, Durability durability) throws IOException {
         try {
-            String indexId = new String(Base64.encodeBase64(put.getRow()));
+            String indexId = new String(put.getRow());
             NavigableMap<byte[], List<Cell>> familyMap = put.getFamilyCellMap();
             Map<String, Object> json = new HashMap<String, Object>();
             for (Map.Entry<byte[], List<Cell>> entry : familyMap.entrySet()) {
@@ -75,8 +74,8 @@ public class DataSyncObserver extends BaseRegionObserver {
                     json.put(key, value);
                 }
             }
-            ElasticSearchOperator.addIndexBuilderToBulk(client.prepareIndex(Config.indexName, Config.typeName, indexId).setSource(json));
-            LOG.info("observer -- add new doc: " + indexId);
+            ElasticSearchOperator.addUpdateBuilderToBulk(client.prepareUpdate(Config.indexName, Config.typeName, indexId).setUpsert(json));
+            LOG.info("observer -- add new doc: " + indexId + " to type: " + Config.typeName);
         } catch (Exception ex) {
             LOG.error(ex);
         }
@@ -85,7 +84,7 @@ public class DataSyncObserver extends BaseRegionObserver {
     @Override
     public void postDelete(final ObserverContext<RegionCoprocessorEnvironment> e, final Delete delete, final WALEdit edit, final Durability durability) throws IOException {
         try {
-            String indexId = new String(Base64.encodeBase64(delete.getRow()));
+            String indexId = new String(delete.getRow());
             ElasticSearchOperator.addDeleteBuilderToBulk(client.prepareDelete(Config.indexName, Config.typeName, indexId));
             LOG.info("observer -- delete a doc: " + indexId);
         } catch (Exception ex) {
